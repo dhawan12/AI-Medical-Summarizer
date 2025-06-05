@@ -1,0 +1,217 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "AI Report Genrator Form",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Patient File",
+              "fieldType": "file",
+              "multipleFiles": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "4a696dca-1d60-4209-aac4-65f8a98896fd",
+      "name": "On form submission",
+      "webhookId": "dc232bff-7f0f-43ec-81b9-3e6bc0a478aa"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "Patient_File",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        220,
+        0
+      ],
+      "id": "cd6274b0-7d75-4083-9b55-135948b2ee9e",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.maindata }}",
+        "options": {
+          "systemMessage": "You are a medical documentation assistant with a clinical background. You analyze semi-structured or unstructured medical forms and generate professional, medically accurate summaries. Your response must always reflect a clinical tone, mimicking how a medical professional would write documentation.\n\n🧠 You must not hallucinate or add assumptions. If data is missing, state it clearly (e.g., “Not documented” or “Unknown”).\n🔐 Do not include sensitive identifiers like Social Security Numbers, Medicare IDs, or physician contact details.\n\nYour response must follow the exact structure below:\n\nPatient Information\nFull Name:\n\nDate of Birth:\n\nGender:\n\nAddress:\n\nContact Number:\n\nMedical History & Comorbidities\nChronic Conditions:\n(e.g., diabetes, hypertension, PVD, overactive bladder, etc.)\n\nRecent Hospitalizations/Falls:\n\nFunctional Limitations:\n\nCurrent Diagnoses\nPrimary Diagnosis:\n\nOther Diagnoses/Risks:\n(Include any comorbidities, behavioral issues, fall risk, etc.)\n\nVital Signs & Observations\nBlood Pressure:\n\nHeart Rate:\n\nWeight:\n\nTemperature:\n\nRespiratory Rate:\n\nMental Status & Mood:\n(e.g., alert, confused, anxious, depressed)\n\nMobility & Daily Living\nAmbulation Status:\n\nADL Assistance:\n(e.g., grooming, bathing, dressing, toileting — list what needs assistance)\n\nSummary of Findings and Diagnosis\nProvide a concise yet clear clinical narrative that summarizes the patient's overall condition. This should reflect a healthcare provider’s perspective. Be objective, direct, and medically relevant. Mention:\n\nCritical concerns (e.g., fall risk, uncontrolled diabetes, mental decline)\n\nSuggested actions (e.g., medication management, caregiver support, follow-up plans)\n\n⚠️ Always write as though the summary will be used for care coordination or physician review.\n\nExample language to maintain tone:\n\n\"Patient presents with...\"\n\n\"Clinical findings suggest...\"\n\n\"Recommend monitoring for...\"\n\n\"Coordination with PCP is advised...\""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        680,
+        0
+      ],
+      "id": "a289641a-7fca-4918-b09d-4fb364ee1d58",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-flash",
+        "options": {
+          "maxOutputTokens": 2048
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        620,
+        260
+      ],
+      "id": "a7df081e-3bc3-4437-bd87-520f12fd9a0a",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "GkqNLGxP1KU0Z83d",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "markdownToHtml",
+        "markdown": "={{ $json.output }}",
+        "destinationKey": "html",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        1080,
+        0
+      ],
+      "id": "06588603-708a-4692-bca0-0a5db30f41cc",
+      "name": "Markdown"
+    },
+    {
+      "parameters": {
+        "sendTo": "dhawan@roboticsforsure.com",
+        "subject": "Medical Report Summary by AI",
+        "message": "={{ $json.html }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1380,
+        0
+      ],
+      "id": "32b8e5c5-b839-423e-9a51-08aaf5b6bcc4",
+      "name": "Gmail",
+      "webhookId": "bba8ab21-f5e0-4d68-8c94-c7f17fbdc055",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "9ztwj1jPWUsohPQN",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "41844886-13db-48a7-b54c-0298b9f2d1a5",
+              "name": "maindata",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        440,
+        0
+      ],
+      "id": "8749f31b-8adb-4765-b11c-e4ff6b2f334f",
+      "name": "Edit Fields"
+    }
+  ],
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0f16f6be955dfa47d54e369bb86a24ccafc0e4c9c43278c266efd0e058f0e364"
+  }
+}
